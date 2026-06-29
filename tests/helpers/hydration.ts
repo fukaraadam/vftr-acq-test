@@ -18,7 +18,7 @@ export async function waitForHydrationWindow(page: Page, timeout = 5_000) {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       }),
   );
-  await page.waitForTimeout(USER_SETTLE_DELAY_MS);
+  // await page.waitForTimeout(USER_SETTLE_DELAY_MS);
 }
 
 export async function hydratedClick(
