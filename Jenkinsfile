@@ -52,14 +52,17 @@ pipeline {
   }
 
   stages {
-    stage('Install dependencies') {
+    stage('Run Playwright tests') {
+      agent {
+        docker {
+          image 'mcr.microsoft.com/playwright:v1.61.1-noble'
+          args '--ipc=host'
+          reuseNode true
+        }
+      }
       steps {
         sh 'npm ci'
-      }
-    }
 
-    stage('Run Playwright tests') {
-      steps {
         script {
           def testEnvironment = [
             "TEST_TARGET=${params.TEST_TARGET}",
@@ -96,14 +99,6 @@ pipeline {
   post {
     always {
       junit testResults: 'test-results/junit.xml', allowEmptyResults: true
-      publishHTML(target: [
-        reportName: 'Playwright HTML Report',
-        reportDir: 'playwright-report',
-        reportFiles: 'index.html',
-        allowMissing: true,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-      ])
       archiveArtifacts(
         artifacts: 'playwright-report/**,test-results/**',
         allowEmptyArchive: true,
