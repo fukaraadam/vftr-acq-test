@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "playwright test",
+    "test:ci": "node scripts/run-playwright-ci.mjs",
+    "test:ci-options": "node --test scripts/ci-options.test.mjs",
+    "test:list": "playwright test --list",
+    "typecheck": "tsc --noEmit"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -11,6 +17,7 @@
     "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.1",
     "dotenv": "^17.4.2",
-    "oracledb": "^7.0.0"
+    "oracledb": "^7.0.0",
+    "typescript": "^5.9.3"
   }
 }

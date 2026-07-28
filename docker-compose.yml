@@ -1,0 +1,90 @@
+services:
+  plugin-init:
+    image: jenkins/jenkins:2.568.1-lts-jdk21
+    user: root
+    entrypoint: ["/bin/bash", "-euc"]
+    command:
+      - |
+        mkdir -p /var/jenkins_home/plugins /run/jenkins-agent
+        jenkins-plugin-cli \
+          --plugin-file /config/jenkins/plugins.txt \
+          --plugin-download-directory /var/jenkins_home/plugins
+        chown -R 1000:1000 /var/jenkins_home /run/jenkins-agent
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - agent_connection:/run/jenkins-agent
+      - ./jenkins:/config/jenkins:ro
+    networks:
+      - local_net
+
+  jenkins:
+    image: jenkins/jenkins:2.568.1-lts-jdk21
+    container_name: jenkins
+    restart: unless-stopped
+    depends_on:
+      plugin-init:
+        condition: service_completed_successfully
+    ports:
+      - "8088:8080"
+    environment:
+      CASC_JENKINS_CONFIG: /config/jenkins/casc.yaml
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?JENKINS_ADMIN_ID must be set}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?JENKINS_ADMIN_PASSWORD must be set}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8088/}
+      JENKINS_AGENT_NAME: ${JENKINS_AGENT_NAME:-playwright-agent}
+      GIT_REPO_URL: ${GIT_REPO_URL:-file:///repo}
+      GIT_BRANCH: ${GIT_BRANCH:-tmp}
+      GIT_CREDENTIALS_ID: ${GIT_CREDENTIALS_ID:-}
+      ORACLE_USER: ${ORACLE_USER:-}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-}
+      ORACLE_CONNECT_STRING: ${ORACLE_CONNECT_STRING:-}
+      JAVA_OPTS: >-
+        -Xmx1g
+        -Djenkins.install.runSetupWizard=false
+        -Dorg.apache.commons.jelly.tags.fmt.timeZone=Europe/Istanbul
+        -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - agent_connection:/run/jenkins-agent
+      - ./jenkins:/config/jenkins:ro
+      - ./jenkins/init.groovy.d:/var/jenkins_home/init.groovy.d:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - local_net
+
+  playwright-agent:
+    build:
+      context: .
+      dockerfile: jenkins/agent.Dockerfile
+    image: vftr-playwright-agent:1.61.1
+    container_name: playwright-agent
+    restart: unless-stopped
+    depends_on:
+      jenkins:
+        condition: service_healthy
+    environment:
+      JENKINS_AGENT_NAME: ${JENKINS_AGENT_NAME:-playwright-agent}
+      JENKINS_AGENT_WORKDIR: /home/jenkins/agent
+      JENKINS_INTERNAL_URL: http://jenkins:8080
+      JENKINS_SECRET_FILE: /run/jenkins-agent/secret
+    volumes:
+      - agent_connection:/run/jenkins-agent:ro
+      - agent_workspace:/home/jenkins/agent
+      - ./:/repo:ro
+    ipc: host
+    networks:
+      - local_net
+
+networks:
+  local_net:
+    driver: bridge
+
+volumes:
+  jenkins_home:
+  agent_connection:
+  agent_workspace:

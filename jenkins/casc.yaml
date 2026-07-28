@@ -1,0 +1,22 @@
+jenkins:
+  systemMessage: "VFTR Playwright Jenkins - configuration is managed as code."
+  numExecutors: 0
+  mode: NORMAL
+  disableRememberMe: false
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          name: "Local Jenkins Administrator"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "${JENKINS_URL}"
+
+jobs:
+  - file: /config/jenkins/jobs.groovy

@@ -1,0 +1,7 @@
+.git
+.env
+.env.jenkins
+node_modules
+playwright-report
+test-results
+volumes
