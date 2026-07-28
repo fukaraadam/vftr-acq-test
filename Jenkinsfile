@@ -49,6 +49,7 @@ pipeline {
 
   environment {
     CI = 'true'
+    NPM_CONFIG_CACHE = '/npm-cache'
   }
 
   stages {
@@ -56,12 +57,12 @@ pipeline {
       agent {
         docker {
           image 'mcr.microsoft.com/playwright:v1.61.1-noble'
-          args '--ipc=host'
+          args '--ipc=host -v vftr-npm-cache:/npm-cache'
           reuseNode true
         }
       }
       steps {
-        sh 'npm ci'
+        sh 'npm ci --prefer-offline --no-audit --no-fund'
 
         script {
           def testEnvironment = [
