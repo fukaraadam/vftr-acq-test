@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { waitForHydrationWindow } from './helpers/hydration';
 import { closeDb, isDbConfigured, queryOne } from './helpers/oracle';
+import { readC2dTestData, shouldRunDbCheck } from './helpers/c2d-test-data';
 
 const SAVE_C2D_TARIFF_METHOD = 'saveC2dTariff';
 const CANDIDATE_TYPE = 'MNP';
@@ -108,8 +109,7 @@ test('Automatic C2d Test', async ({ page }) => {
 });
 
 test('Simple C2d Test', async ({ page }) => {
-  const tariffId = '4358329'
-  const mnpNumber = '(555) 555 54 07'
+  const { tariffId, mnpNumber } = readC2dTestData('simple');
   test.setTimeout(120_000);
 
   await page.goto('https://troy.vodafone.com.tr/c2d-nextjs/numara-tasima-yeni-hat');
@@ -186,8 +186,7 @@ test('Simple C2d Test', async ({ page }) => {
 });
 
 test('Main C2d Test', async ({ page }) => {
-  const tariffId = '4358326'
-  const mnpNumber = '(555) 555 11 25'
+  const { tariffId, mnpNumber } = readC2dTestData('main');
   test.setTimeout(120_000);
 
   await page.goto('https://troy.vodafone.com.tr/c2d-nextjs/numara-tasima-yeni-hat');
@@ -252,7 +251,11 @@ test('Main C2d Test', async ({ page }) => {
   const saveC2dTariffResponseBody = await saveC2dTariffResponse.text();
   const applicationId = await readApplicationIdFromResponseBody(saveC2dTariffResponseBody);
 
-  if (isDbConfigured()) {
+  if (shouldRunDbCheck()) {
+    expect(
+      isDbConfigured(),
+      'Oracle DB kontrolu istendi ancak ORACLE_USER, ORACLE_PASSWORD veya ORACLE_CONNECT_STRING eksik.',
+    ).toBeTruthy();
     expect(applicationId, 'DB kontrolu icin applicationId response body veya C2D_APPLICATION_ID env icinde olmali').toBeTruthy();
 
     await expect.poll(async () => {
@@ -273,7 +276,7 @@ test('Main C2d Test', async ({ page }) => {
   } else {
     test.info().annotations.push({
       type: 'db-check-skipped',
-      description: 'Oracle DB kontrolu icin ORACLE_USER, ORACLE_PASSWORD, ORACLE_CONNECT_STRING env degerleri verilmeli.',
+      description: 'Oracle DB kontrolu C2D_RUN_DB_CHECK=true verilmedigi icin atlandi.',
     });
   }
   
