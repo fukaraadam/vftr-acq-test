@@ -1,7 +1,5 @@
 pipeline {
-  agent {
-    label 'playwright'
-  }
+  agent any
 
   options {
     disableConcurrentBuilds()
